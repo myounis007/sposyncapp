@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "401083242593",
+    "project_id": "soccerapp-38603",
+    "storage_bucket": "soccerapp-38603.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:401083242593:android:6f48888577b714035ab220",
+        "android_client_info": {
+          "package_name": "com.maxcore.soccer_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB7gq58kzkF1nf9K_Hm0mZOE5fxsBKBSMk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
