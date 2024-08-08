@@ -1,4 +1,3 @@
-// ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class UserModel {
@@ -13,8 +12,8 @@ class UserModel {
   String? team;
   String? imageUrlProfile;
   String? uid;
-  List<String>? followedLeagues; // List of followed league IDs for fans
-  List<String>? joinedLeagues;   // List of joined league IDs for players
+  List<String>? followedLeagues;
+  List<String>? joinedLeagues;
 
   UserModel({
     this.role,
@@ -32,22 +31,22 @@ class UserModel {
     this.joinedLeagues,
   });
 
-  // Convert a UserModel into a Map
+  // Convert a UserModel into a Map for Firestore
   Map<String, dynamic> toJson() {
     return {
       'role': role,
       'name': name,
       'email': email,
-      'team': team,
       'password': password,
       'contact': contact,
       'experience': experience,
       'position': position,
       'favourite_team': favouriteTeam,
+      'team': team,
       'imageUrlProfile': imageUrlProfile,
       'uid': uid,
-      'followedLeagues': followedLeagues, // Add followed leagues
-      'joinedLeagues': joinedLeagues,     // Add joined leagues
+      'followedLeagues': followedLeagues,
+      'joinedLeagues': joinedLeagues,
     };
   }
 
@@ -57,6 +56,7 @@ class UserModel {
       role: json['role'],
       name: json['name'],
       email: json['email'],
+      password: json['password'],
       contact: json['contact'],
       experience: json['experience'],
       position: json['position'],
@@ -64,14 +64,47 @@ class UserModel {
       team: json['team'],
       imageUrlProfile: json['imageUrlProfile'],
       uid: json['uid'],
-      followedLeagues: List<String>.from(json['followedLeagues'] ?? []), // Initialize followed leagues
-      joinedLeagues: List<String>.from(json['joinedLeagues'] ?? []),     // Initialize joined leagues
+      followedLeagues: List<String>.from(json['followedLeagues'] ?? []),
+      joinedLeagues: List<String>.from(json['joinedLeagues'] ?? []),
     );
   }
 
-  // Create a UserModel from a Firestore DocumentSnapshot
-  factory UserModel.fromDocumentSnapshot(DocumentSnapshot doc) {
-    final data = doc.data() as Map<String, dynamic>;
-    return UserModel.fromJson(data);
+  // Convert a UserModel into a Map for Firestore update
+  Map<String, dynamic> toFirestore() {
+    return {
+      'role': role,
+      'name': name,
+      'email': email,
+      'password': password,
+      'contact': contact,
+      'experience': experience,
+      'position': position,
+      'favourite_team': favouriteTeam,
+      'team': team,
+      'imageUrlProfile': imageUrlProfile,
+      'uid': uid,
+      'followedLeagues': followedLeagues,
+      'joinedLeagues': joinedLeagues,
+    };
+  }
+
+  // Create a UserModel from Firestore DocumentSnapshot
+  factory UserModel.fromFirestore(DocumentSnapshot doc) {
+    Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+    return UserModel(
+      role: data['role'],
+      name: data['name'],
+      email: data['email'],
+      password: data['password'],
+      contact: data['contact'],
+      experience: data['experience'],
+      position: data['position'],
+      favouriteTeam: data['favourite_team'],
+      team: data['team'],
+      imageUrlProfile: data['imageUrlProfile'],
+      uid: data['uid'],
+      followedLeagues: List<String>.from(data['followedLeagues'] ?? []),
+      joinedLeagues: List<String>.from(data['joinedLeagues'] ?? []),
+    );
   }
 }

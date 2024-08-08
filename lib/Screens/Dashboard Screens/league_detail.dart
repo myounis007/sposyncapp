@@ -6,21 +6,15 @@ import 'package:soccer_app/Screens/Widgets/text_widget.dart';
 class LeagueDetailScreen extends StatelessWidget {
   final Createleague league;
   final bool isFollowed;
-  final bool isJoined;
   final VoidCallback onFollow;
   final VoidCallback onUnfollow;
-  final VoidCallback onJoin;
-  final VoidCallback onUnjoin;
 
   const LeagueDetailScreen({
     super.key,
     required this.league,
     required this.isFollowed,
-    required this.isJoined,
     required this.onFollow,
     required this.onUnfollow,
-    required this.onJoin,
-    required this.onUnjoin,
   });
 
   @override
@@ -92,18 +86,14 @@ class LeagueDetailScreen extends StatelessWidget {
                     child:
                         Text(isFollowed ? 'Unfollow League' : 'Follow League'),
                   ),
+                  const SizedBox(height: 16.0),
                   ElevatedButton(
-                    onPressed: isJoined ? onUnjoin : onJoin,
-                    child: Text(isJoined ? 'Unjoin League' : 'Join League'),
+                    onPressed: () {
+                      Navigator.pop(context);
+                    },
+                    child: const Text('Back'),
                   ),
                 ],
-              ),
-              const SizedBox(height: 16.0),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                },
-                child: const Text('Back'),
               ),
             ],
           ),

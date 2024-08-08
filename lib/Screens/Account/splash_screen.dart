@@ -3,6 +3,7 @@ import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:soccer_app/Screens/Widgets/bottomNavBar.dart';
 
 import '../Dashboard Screens/coach_dashboard_screen..dart';
 
@@ -11,7 +12,7 @@ import '../Dashboard Screens/player_dashboard_screen.dart';
 import 'login_screen.dart';
 
 class SplashScreen extends StatefulWidget {
-  const SplashScreen({Key? key}) : super(key: key);
+  const SplashScreen({super.key});
 
   @override
   State<SplashScreen> createState() => _SplashScreenState();
@@ -34,8 +35,8 @@ class _SplashScreenState extends State<SplashScreen> {
     String? uid = prefs.getString('uid');
     String? role = prefs.getString('role');
 
-    log('User ID: $uid'); // Debug statement
-    log('User Role: $role'); // Debug statement
+    log("User ID: $uid"); // Debug statement
+    log("User Role: $role"); // Debug statement
 
     if (uid != null && role != null) {
       _navigateToRoleBasedScreen(role);
@@ -47,10 +48,10 @@ class _SplashScreenState extends State<SplashScreen> {
   void _navigateToRoleBasedScreen(String role) {
     switch (role) {
       case 'Team Coach':
-        Get.offAll(const CoachDashboardScreen());
+        Get.offAll(const BottomNavBarScreen());
         break;
       case 'Fan':
-        Get.offAll(const FanDashboardScreen());
+        Get.offAll( FanDashboardScreen());
         break;
       case 'Player':
         Get.offAll(const PlayerDashboardScreen());

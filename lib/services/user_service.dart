@@ -1,24 +1,27 @@
+import 'dart:developer';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/user_model.dart';
 
 class UserService {
+  final _auth = FirebaseAuth.instance;
+
   Future<UserModel?> fetchUserData() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      return null;
-    }
+    log("MyuData ==> ${_auth.currentUser}");
 
     final userDoc = await FirebaseFirestore.instance
         .collection('users')
-        .doc(user.uid)
+        .doc(_auth.currentUser?.uid)
         .get();
+    log("Uswer found Successfully");
     if (!userDoc.exists) {
       return null;
     }
 
     final data = userDoc.data();
     if (data == null) {
+      log("Wasted");
       return null;
     }
 

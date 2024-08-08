@@ -12,11 +12,13 @@ class CoachScreen extends StatefulWidget {
   const CoachScreen({super.key});
 
   @override
+  // ignore: library_private_types_in_public_api
   _CoachScreenState createState() => _CoachScreenState();
 }
 
 class _CoachScreenState extends State<CoachScreen> {
   bool isLoading = true;
+  UserModel userModel = UserModel();
 
   @override
   void initState() {
@@ -24,22 +26,20 @@ class _CoachScreenState extends State<CoachScreen> {
     fetchData();
   }
 
-  UserModel? userModel;
   Future<void> fetchData() async {
     UserService userService = UserService();
-    final data = await userService.fetchUserData();
+    // final data = await userService.fetchUserData();
     setState(() {
-      userModel = data;
+      // userModel = data;
       isLoading = false;
     });
   }
 
   Future<void> navigateToEditCoachScreen() async {
-    if (userModel == null) return;
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
-          builder: (context) => EditCoachScreen(userModel: userModel!)),
+          builder: (context) => EditCoachScreen(userModel: userModel)),
     );
     if (result == true) {
       fetchData(); // Reload the data when coming back from the edit screen
@@ -60,7 +60,7 @@ class _CoachScreenState extends State<CoachScreen> {
       );
     }
 
-    if (userModel == null) {
+    if (isLoading == false && userModel == null) {
       return const Scaffold(
         body: Center(
           child: Text("No data found"),
@@ -79,8 +79,8 @@ class _CoachScreenState extends State<CoachScreen> {
                 SizedBox(height: height * .04),
                 CircleAvatar(
                   radius: 60,
-                  backgroundImage: userModel?.imageUrlProfile != null
-                      ? NetworkImage(userModel!.imageUrlProfile!)
+                  backgroundImage: userModel.imageUrlProfile != null
+                      ? NetworkImage(userModel.imageUrlProfile!)
                           as ImageProvider
                       : const AssetImage('assets/images/profileplaceholder.png')
                           as ImageProvider,
@@ -102,7 +102,7 @@ class _CoachScreenState extends State<CoachScreen> {
                   child: RoundButton(
                     title: 'logout',
                     onPressed: () async {
-                      authlogout.firebaseLogout(context);
+                      authlogout.signOut(context);
                     },
                   ),
                 ),
@@ -128,8 +128,8 @@ class _CoachScreenState extends State<CoachScreen> {
               children: [
                 CircleAvatar(
                   radius: 60,
-                  backgroundImage: userModel?.imageUrlProfile != null
-                      ? NetworkImage(userModel!.imageUrlProfile!)
+                  backgroundImage: userModel.imageUrlProfile != null
+                      ? NetworkImage(userModel.imageUrlProfile!)
                           as ImageProvider
                       : const AssetImage('assets/images/profileplaceholder.png')
                           as ImageProvider,
@@ -137,13 +137,13 @@ class _CoachScreenState extends State<CoachScreen> {
                 SizedBox(height: height * .06),
                 CustomTextTField(
                   readOnly: true,
-                  hintText: userModel!.name,
+                  hintText: userModel.name,
                   prefixIcon: Icons.person_2,
                 ),
                 SizedBox(height: height * .01),
                 CustomTextTField(
                   readOnly: true,
-                  hintText: userModel!.email,
+                  hintText: userModel.email,
                   prefixIcon: Icons.email_outlined,
                 ),
                 SizedBox(height: height * .01),
@@ -155,19 +155,19 @@ class _CoachScreenState extends State<CoachScreen> {
                 // SizedBox(height: height * .01),
                 CustomTextTField(
                   readOnly: true,
-                  hintText: userModel!.team,
+                  hintText: userModel.team,
                   prefixIcon: Icons.group,
                 ),
                 SizedBox(height: height * .01),
                 CustomTextTField(
                   readOnly: true,
-                  hintText: userModel!.experience.toString(),
+                  hintText: userModel.experience.toString(),
                   prefixIcon: Icons.timeline,
                 ),
                 SizedBox(height: height * .01),
                 CustomTextTField(
                   readOnly: true,
-                  hintText: userModel!.contact,
+                  hintText: userModel.contact,
                   prefixIcon: Icons.phone,
                 ),
                 SizedBox(height: height * .03),

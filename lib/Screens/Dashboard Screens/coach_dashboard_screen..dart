@@ -4,68 +4,19 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:form_field_validator/form_field_validator.dart';
+import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:soccer_app/Screens/Live%20Match/live_match.dart';
 import 'package:soccer_app/Screens/Pakistan%20Team/pakistan_team.dart';
-import 'package:soccer_app/Screens/Widgets/bottomNavBar.dart';
 import 'package:soccer_app/Screens/Widgets/text_widget.dart';
+import 'package:soccer_app/edit_and_view_ofroles/Coach/coach_screen.dart';
+import 'package:soccer_app/services/auth_service.dart';
 import 'package:soccer_app/services/league_services.dart';
 import 'package:soccer_app/Screens/Dashboard%20Screens/league_gridview.dart';
 import '../../models/createleague_model.dart';
 import '../Widgets/app_colors.dart';
+
 import '../Widgets/textfield_widget.dart';
-
-class League {
-  String name;
-  String venue;
-  String player;
-  String role;
-  String duration;
-  String time;
-  String team;
-  String umpire;
-  String? imagePath1;
-  String? imagePath2;
-
-  League({
-    required this.name,
-    required this.venue,
-    required this.player,
-    required this.role,
-    required this.duration,
-    required this.time,
-    required this.team,
-    required this.umpire,
-    this.imagePath1,
-    this.imagePath2,
-  });
-
-  Map<String, dynamic> toJson() => {
-        'name': name,
-        'venue': venue,
-        'player': player,
-        'role': role,
-        'duration': duration,
-        'time': time,
-        'team': team,
-        'umpire': umpire,
-        'imagePath1': imagePath1,
-        'imagePath2': imagePath2,
-      };
-
-  static League fromJson(Map<String, dynamic> json, [String? id]) => League(
-        name: json['name'],
-        venue: json['venue'],
-        player: json['player'],
-        role: json['role'],
-        duration: json['duration'],
-        time: json['time'],
-        team: json['team'],
-        umpire: json['umpire'],
-        imagePath1: json['imagePath1'],
-        imagePath2: json['imagePath2'],
-      );
-}
 
 class CoachDashboardScreen extends StatefulWidget {
   const CoachDashboardScreen({Key? key}) : super(key: key);
@@ -75,9 +26,9 @@ class CoachDashboardScreen extends StatefulWidget {
 }
 
 class _CoachDashboardScreenState extends State<CoachDashboardScreen> {
+ 
+
   LeagueServices allleagues = LeagueServices();
-  List<League> leagues = [];
-  List<League> images = [];
 
   // Controllers
   final TextEditingController leagueController = TextEditingController();
@@ -89,6 +40,7 @@ class _CoachDashboardScreenState extends State<CoachDashboardScreen> {
   final TextEditingController teamController = TextEditingController();
   final TextEditingController umpireController = TextEditingController();
   final TextEditingController summerController = TextEditingController();
+  final TextEditingController idController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
 
   File? _image1;
@@ -108,7 +60,6 @@ class _CoachDashboardScreenState extends State<CoachDashboardScreen> {
         _image2 = pickedFile != null ? File(pickedFile.path) : null;
       }
     });
-
     Navigator.pop(context);
   }
 
@@ -124,15 +75,15 @@ class _CoachDashboardScreenState extends State<CoachDashboardScreen> {
     if (_formKey.currentState!.validate()) {
       try {
         Createleague newLeague = Createleague(
-          league: leagueController.text,
-          venue: venueController.text,
-          player: playerController.text,
-          role: roleController.text,
-          duration: durationController.text,
-          time: timeController.text,
-          teams: teamController.text,
-          umpires: umpireController.text,
-        );
+            league: leagueController.text,
+            venue: venueController.text,
+            player: playerController.text,
+            role: roleController.text,
+            duration: durationController.text,
+            time: timeController.text,
+            teams: teamController.text,
+            umpires: umpireController.text,
+            id: idController.text);
 
         DocumentReference docRef =
             await FirebaseFirestore.instance.collection('leagues').add(
@@ -164,13 +115,9 @@ class _CoachDashboardScreenState extends State<CoachDashboardScreen> {
           _image1 = null;
           _image2 = null;
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('League created successfully!')),
-        );
+        Get.snackbar('title', 'League created successfully!');
       } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to create league: $e')),
-        );
+        Get.snackbar('title', 'League created successfully! $e');
       }
     }
   }
@@ -220,7 +167,11 @@ class _CoachDashboardScreenState extends State<CoachDashboardScreen> {
       appBar: AppBar(
         backgroundColor: Colors.white,
         centerTitle: true,
-        title: const Text('Coach Dashboard'),
+        title: InkWell(
+            onTap: () {
+              FirebaseService().signOut(context);
+            },
+            child: Text('Coach Dashboard')),
       ),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -392,6 +343,7 @@ class _CoachDashboardScreenState extends State<CoachDashboardScreen> {
                             TextButton(
                               onPressed: () async {
                                 _createLeague();
+                                Get.off(context);
                               },
                               child: const Text(
                                 'Create League',
@@ -418,7 +370,10 @@ class _CoachDashboardScreenState extends State<CoachDashboardScreen> {
               ),
               SizedBox(height: height * .01),
               LargeText(title: 'Created League:'),
-              SizedBox(height: 200, child: LeagueGridView(),),
+              SizedBox(
+                height: 200,
+                child: LeagueGridView(),
+              ),
               // SizedBox(height: height * .02),
               LargeText(title: 'Live Matches'),
               SizedBox(height: height * .01),
@@ -696,7 +651,7 @@ class _CoachDashboardScreenState extends State<CoachDashboardScreen> {
                       ),
                     )
                   : Container(),
-              SizedBox(height: height * .02)
+              SizedBox(height: height * .02),
             ],
           ),
         ),

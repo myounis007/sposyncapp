@@ -17,7 +17,6 @@ Future<void> main() async {
     otpType: OTPType.numeric,
     emailTheme: EmailTheme.v4,
     otpLength: 6,
-   
     appEmail: 'myounis4707@gmail.com',
   );
 
@@ -51,9 +50,10 @@ class MyApp extends StatelessWidget {
       ),
       home: const SplashScreen(),
       routes: {
-        'BottomNavBarScreen': (context) => const BottomNavBarScreen(),
+        'BottomNavBarScreen': (context) => const BottomNavBarScreen(
+            /*    role: ModalRoute.of(context)!.settings.arguments as String */),
         'PlayerDashboardScreen': (context) => const PlayerDashboardScreen(),
-        'FanDashboardScreen': (context) => const FanDashboardScreen(),
+        'FanDashboardScreen': (context) => FanDashboardScreen(),
       },
     );
   }

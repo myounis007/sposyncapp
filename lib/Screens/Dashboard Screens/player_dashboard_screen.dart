@@ -1,22 +1,24 @@
 import 'dart:developer';
-
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:soccer_app/Screens/Widgets/app_colors.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import '../../edit_and_view_ofroles/Fan/fan_screen.dart';
-import '../../models/createleague_model.dart';
-import '../../models/user_model.dart';
-import '../../services/auth_service.dart';
-import '../../services/league_services.dart';
-import '../../services/leagues_manager.dart';
-
-import 'package:soccer_app/Screens/Widgets/text_widget.dart';
-import 'package:soccer_app/Screens/Dashboard Screens/league_detail.dart';
 import 'package:soccer_app/Screens/Widgets/round_button.dart';
+import 'package:soccer_app/Screens/Widgets/text_widget.dart';
+import 'package:soccer_app/models/user_model.dart';
+import 'package:soccer_app/services/auth_service.dart';
+import '../../edit_and_view_ofroles/Player/player_screen.dart';
+import '../../models/createleague_model.dart';
+import '../../services/league_services.dart';
+import '../Widgets/app_colors.dart';
+import 'league_detail.dart';
 
 class PlayerDashboardScreen extends StatefulWidget {
-  const PlayerDashboardScreen({super.key});
+  final UserModel? userModel;
+
+  const PlayerDashboardScreen({
+    super.key,
+    this.userModel,
+  });
 
   @override
   State<PlayerDashboardScreen> createState() => _PlayerDashboardScreenState();
@@ -24,39 +26,88 @@ class PlayerDashboardScreen extends StatefulWidget {
 
 class _PlayerDashboardScreenState extends State<PlayerDashboardScreen> {
   final LeagueService leagueService = LeagueService();
-  late LeagueManager leagueManager;
-  final FirebaseService authlogout = FirebaseService();
+  final FirebaseService firebaseService = FirebaseService();
+  List<Createleague> joinedLeagues = [];
   UserModel? userModel;
-  String? userId;
 
- @override
-void initState() {
-  super.initState();
-  
-  FirebaseAuth.instance.authStateChanges().listen((User? user) {
-    if (user == null) {
-      log("User is currently signed out!");
-    } else {
-      log("User is signed in!");
-      // You can also load user data here
-      loadInitialData();
-    }
-  });
-}
-
+  @override
+  void initState() {
+    super.initState();
+    userModel = widget.userModel;
+    loadInitialData();
+    _loadJoinedLeagues();
+  }
 
   Future<void> loadInitialData() async {
-    userModel = await authlogout.getUser();
+    userModel = await firebaseService.getUser();
     if (userModel != null) {
-      userId = userModel!.uid;
-      leagueManager = LeagueManager(userModel!);
-      await leagueManager.loadJoinedLeagues();
-    } else {
-      // Handle the case where userModel is null
-      // For example, show a message or redirect to login screen
-      log("No user is logged in.");
+      setState(() {});
     }
-    setState(() {});
+  }
+
+  Future<void> _loadJoinedLeagues() async {
+    if (userModel != null) {
+      DocumentSnapshot userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userModel!.uid)
+          .get();
+
+      if (userDoc.exists) {
+        Map<String, dynamic>? userData =
+            userDoc.data() as Map<String, dynamic>?;
+
+        if (userData != null) {
+          List<dynamic> leaguesData = userData['joinedLeagues'] ?? [];
+          joinedLeagues = leaguesData
+              .map((json) => Createleague.fromJson(json, json['id']))
+              .toList();
+          setState(() {});
+        } else {
+          log("User document data is null.");
+        }
+      } else {
+        log("User document does not exist.");
+      }
+    }
+  }
+
+  Future<void> _updateJoinedLeaguesInFirestore() async {
+    if (userModel != null) {
+      DocumentReference userDocRef =
+          FirebaseFirestore.instance.collection('users').doc(userModel!.uid);
+
+      try {
+        // Update the followedLeagues field if the document exists
+        await userDocRef.update({
+          'joinedLeagues':
+              joinedLeagues.map((league) => league.toJson()).toList(),
+        });
+      } catch (e) {
+        // If the document does not exist, create it
+        if (e is FirebaseException && e.code == 'not-found') {
+          await userDocRef.set({
+            'joinedLeagues':
+                joinedLeagues.map((league) => league.toJson()).toList(),
+          });
+        } else {
+          rethrow;
+        }
+      }
+    }
+  }
+
+  void _addJoinedLeague(Createleague league) {
+    setState(() {
+      joinedLeagues.add(league);
+    });
+    _updateJoinedLeaguesInFirestore();
+  }
+
+  void _removeJoinedLeague(Createleague league) {
+    setState(() {
+      joinedLeagues.removeWhere((l) => l.id == league.id);
+    });
+    _updateJoinedLeaguesInFirestore();
   }
 
   @override
@@ -87,9 +138,11 @@ void initState() {
               ListTile(
                 onTap: () {
                   Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => const FanScreen()));
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const PlayerScreen(),
+                    ),
+                  );
                 },
                 leading: const Icon(Icons.dashboard_sharp),
                 title: MediumText(title: 'Profile'),
@@ -100,7 +153,7 @@ void initState() {
                 child: RoundButton(
                   title: 'Logout',
                   onPressed: () async {
-                    await authlogout.firebaseLogout(context);
+                    await firebaseService.signOut(context);
                   },
                 ),
               ),
@@ -112,7 +165,7 @@ void initState() {
         ),
       ),
       appBar: AppBar(
-        backgroundColor: Colors.deepPurple[100],
+        backgroundColor: AppColors.apptheme,
         centerTitle: true,
         title: LargeText(title: 'Player Dashboard'),
       ),
@@ -138,12 +191,8 @@ void initState() {
           Expanded(
             flex: 1,
             child: StreamBuilder<List<Createleague>>(
-              stream: leagueManager.getAllLeagues(),
+              stream: leagueService.getLeagues(),
               builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-
                 if (snapshot.hasError) {
                   return Center(child: Text('Error: ${snapshot.error}'));
                 }
@@ -153,102 +202,161 @@ void initState() {
                 }
 
                 final leagues = snapshot.data!;
-                final joinedLeagues = leagueManager.joinedLeagues;
 
                 return Padding(
                   padding: const EdgeInsets.all(8.0),
-                  child: ListView.builder(
-                    physics: const BouncingScrollPhysics(),
-                    itemCount: leagues.length,
-                    itemBuilder: (context, index) {
-                      final league = leagues[index];
-                      final isJoined =
-                          joinedLeagues.any((l) => l.id == league.id);
-                      return Card(
-                        child: ListTile(
-                          leading:
-                              league.image1 != null && league.image1!.isNotEmpty
-                                  ? Image.network(league.image1!)
-                                  : const Icon(Icons.image_not_supported),
-                          title: Text(
-                              '${index + 1}: ${league.league ?? 'Unnamed League'}'),
-                          subtitle: Text(league.venue ?? 'No venue available'),
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => LeagueDetailScreen(
-                                  league: league,
-                                  isFollowed: false,
-                                  isJoined: isJoined,
-                                  onFollow: () {},
-                                  onUnfollow: () {},
-                                  onJoin: () {
-                                    leagueManager.addJoinedLeague(league);
-                                    Fluttertoast.showToast(
-                                      msg: "You joined ${league.league}",
-                                      toastLength: Toast.LENGTH_SHORT,
-                                      gravity: ToastGravity.TOP,
-                                      timeInSecForIosWeb: 1,
-                                      textColor: Colors.white,
-                                      fontSize: 16.0,
-                                    );
-                                    Navigator.pop(context);
-                                  },
-                                  onUnjoin: () {
-                                    leagueManager.removeJoinedLeague(league);
-                                    Fluttertoast.showToast(
-                                      msg: "You unjoined ${league.league}",
-                                      toastLength: Toast.LENGTH_SHORT,
-                                      gravity: ToastGravity.TOP,
-                                      timeInSecForIosWeb: 1,
-                                      backgroundColor: AppColors.black,
-                                      textColor: Colors.white,
-                                      fontSize: 16.0,
-                                    );
-                                    Navigator.pop(context);
-                                  },
+                  child: Container(
+                    decoration: BoxDecoration(
+                      border: Border.all(color: AppColors.black, width: 2),
+                    ),
+                    child: ListView.builder(
+                      physics: const BouncingScrollPhysics(),
+                      itemCount: leagues.length,
+                      itemBuilder: (context, index) {
+                        final league = leagues[index];
+                        final isFollowed =
+                            joinedLeagues.any((l) => l.id == league.id);
+                        return Card(
+                          child: ListTile(
+                            leading: league.image1 != null &&
+                                    league.image1!.isNotEmpty
+                                ? Image.network(league.image1!)
+                                : const Icon(Icons.image_not_supported),
+                            title: Text(league.league ?? 'Unnamed League'),
+                            subtitle:
+                                Text(league.venue ?? 'No venue available'),
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => LeagueDetailScreen(
+                                    league: league,
+                                    isFollowed: isFollowed,
+                                    onFollow: () {
+                                      _addJoinedLeague(league);
+                                      Fluttertoast.showToast(
+                                          msg: "You joined ${league.league}",
+                                          toastLength: Toast.LENGTH_SHORT,
+                                          gravity: ToastGravity.TOP,
+                                          timeInSecForIosWeb: 1,
+                                          textColor: Colors.white,
+                                          fontSize: 16.0);
+                                      Navigator.pop(context);
+                                    },
+                                    onUnfollow: () {
+                                      _removeJoinedLeague(league);
+                                      Fluttertoast.showToast(
+                                          msg: "You unjoined ${league.league}",
+                                          toastLength: Toast.LENGTH_SHORT,
+                                          gravity: ToastGravity.TOP,
+                                          timeInSecForIosWeb: 1,
+                                          backgroundColor: AppColors.black,
+                                          textColor: Colors.white,
+                                          fontSize: 16.0);
+                                      Navigator.pop(context);
+                                    },
+                                  ),
                                 ),
-                              ),
-                            );
-                          },
-                          trailing: isJoined
-                              ? IconButton(
-                                  icon: const Icon(Icons.remove_circle),
-                                  onPressed: () {
-                                    leagueManager.removeJoinedLeague(league);
-                                    Fluttertoast.showToast(
-                                      msg: "You unjoined ${league.league}",
-                                      toastLength: Toast.LENGTH_SHORT,
-                                      gravity: ToastGravity.TOP,
-                                      timeInSecForIosWeb: 1,
-                                      textColor: Colors.white,
-                                      fontSize: 16.0,
-                                    );
-                                    setState(() {});
-                                  },
-                                )
-                              : IconButton(
-                                  icon: const Icon(Icons.add_circle),
-                                  onPressed: () {
-                                    leagueManager.addJoinedLeague(league);
-                                    Fluttertoast.showToast(
-                                      msg: "You joined ${league.league}",
-                                      toastLength: Toast.LENGTH_SHORT,
-                                      gravity: ToastGravity.TOP,
-                                      timeInSecForIosWeb: 1,
-                                      textColor: Colors.white,
-                                      fontSize: 16.0,
-                                    );
-                                    setState(() {});
-                                  },
-                                ),
-                        ),
-                      );
-                    },
+                              );
+                            },
+                          ),
+                        );
+                      },
+                    ),
                   ),
                 );
               },
+            ),
+          ),
+          const Divider(
+            indent: 13,
+            endIndent: 30,
+            color: Colors.black,
+          ),
+          Expanded(
+            flex: 1,
+            child: Column(
+              children: [
+                const Card(
+                  child: Padding(
+                    padding: EdgeInsets.all(8.0),
+                    child: Text(
+                      'Joined Leagues',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: joinedLeagues.isEmpty
+                      ? const Center(child: Text('No Joined leagues'))
+                      : Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: ListView.builder(
+                            physics: const BouncingScrollPhysics(),
+                            itemCount: joinedLeagues.length,
+                            itemBuilder: (context, index) {
+                              final league = joinedLeagues[index];
+                              return Card(
+                                child: ListTile(
+                                  leading: league.image1 != null &&
+                                          league.image1!.isNotEmpty
+                                      ? Image.network(league.image1!)
+                                      : const Icon(Icons.image_not_supported),
+                                  title: Text(
+                                      '${index + 1}: ${league.league ?? 'Unnamed League'}'),
+                                  subtitle: Text(
+                                      league.venue ?? 'No venue available'),
+                                  trailing: IconButton(
+                                    icon: const Icon(Icons.delete),
+                                    onPressed: () {
+                                      _removeJoinedLeague(league);
+                                      Fluttertoast.showToast(
+                                          msg: "You UnJoined ${league.league}",
+                                          toastLength: Toast.LENGTH_SHORT,
+                                          gravity: ToastGravity.TOP,
+                                          timeInSecForIosWeb: 1,
+                                          backgroundColor: AppColors.black,
+                                          textColor: Colors.white,
+                                          fontSize: 16.0);
+                                    },
+                                  ),
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) =>
+                                            LeagueDetailScreen(
+                                          league: league,
+                                          isFollowed: true,
+                                          onUnfollow: () {
+                                            _removeJoinedLeague(league);
+                                            Fluttertoast.showToast(
+                                                msg:
+                                                    "You UnJoined ${league.league}",
+                                                toastLength: Toast.LENGTH_SHORT,
+                                                gravity: ToastGravity.TOP,
+                                                timeInSecForIosWeb: 1,
+                                                backgroundColor:
+                                                    AppColors.black,
+                                                textColor: Colors.white,
+                                                fontSize: 16.0);
+                                            Navigator.pop(context);
+                                          },
+                                          onFollow: () {},
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                ),
+              ],
             ),
           ),
         ],
