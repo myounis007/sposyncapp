@@ -5,7 +5,6 @@ import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:soccer_app/Screens/Widgets/bottomNavBar.dart';
 
-import '../Dashboard Screens/coach_dashboard_screen..dart';
 
 import '../Dashboard Screens/fan_dashboard_screen.dart';
 import '../Dashboard Screens/player_dashboard_screen.dart';
@@ -51,7 +50,7 @@ class _SplashScreenState extends State<SplashScreen> {
         Get.offAll(const BottomNavBarScreen());
         break;
       case 'Fan':
-        Get.offAll( FanDashboardScreen());
+        Get.offAll( const FanDashboardScreen());
         break;
       case 'Player':
         Get.offAll(const PlayerDashboardScreen());

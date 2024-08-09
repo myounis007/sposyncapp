@@ -1,5 +1,6 @@
 import 'dart:developer';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:soccer_app/Screens/Widgets/round_button.dart';
@@ -71,36 +72,56 @@ class _PlayerDashboardScreenState extends State<PlayerDashboardScreen> {
     }
   }
 
-  Future<void> _updateJoinedLeaguesInFirestore() async {
-    if (userModel != null) {
-      DocumentReference userDocRef =
-          FirebaseFirestore.instance.collection('users').doc(userModel!.uid);
+  // Future<void> _updateJoinedLeaguesInFirestore() async {
+  //   if (userModel != null) {
+  //     DocumentReference userDocRef =
+  //         FirebaseFirestore.instance.collection('users').doc(userModel!.uid);
 
-      try {
-        // Update the followedLeagues field if the document exists
-        await userDocRef.update({
-          'joinedLeagues':
-              joinedLeagues.map((league) => league.toJson()).toList(),
-        });
-      } catch (e) {
-        // If the document does not exist, create it
-        if (e is FirebaseException && e.code == 'not-found') {
-          await userDocRef.set({
-            'joinedLeagues':
-                joinedLeagues.map((league) => league.toJson()).toList(),
-          });
-        } else {
-          rethrow;
-        }
-      }
-    }
-  }
+  //     try {
+  //       // Update the followedLeagues field if the document exists
+  //       await userDocRef.update({
+  //         'joinedLeagues':
+  //             joinedLeagues.map((league) => league.toJson()).toList(),
+  //       });
+  //     } catch (e) {
+  //       // If the document does not exist, create it
+  //       if (e is FirebaseException && e.code == 'not-found') {
+  //         await userDocRef.set({
+  //           'joinedLeagues':
+  //               joinedLeagues.map((league) => league.toJson()).toList(),
+  //         });
+  //       } else {
+  //         rethrow;
+  //       }
+  //     }
+  //   }
+  // }
 
   void _addJoinedLeague(Createleague league) {
     setState(() {
       joinedLeagues.add(league);
     });
     _updateJoinedLeaguesInFirestore();
+  }
+
+  Future<void> _updateJoinedLeaguesInFirestore() async {
+    try {
+      // Assuming `userId` is the current user's ID
+      String userId = FirebaseAuth.instance.currentUser!.uid;
+
+      // Convert `joinedLeagues` to a list of maps for Firestore
+      List<Map<String, dynamic>> leaguesData =
+          joinedLeagues.map((league) => league.toJson()).toList();
+
+      // Update the `joinedLeagues` field in the user's document
+      await FirebaseFirestore.instance.collection('users').doc(userId).update({
+        'joinedLeagues': FieldValue.arrayUnion(leaguesData),
+      });
+
+      print("Joined leagues updated successfully");
+    } catch (e) {
+      print("Failed to update joined leagues: $e");
+    }
   }
 
   void _removeJoinedLeague(Createleague league) {

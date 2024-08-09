@@ -32,13 +32,17 @@ class _EditCoachScreenState extends State<EditCoachScreen> {
   @override
   void initState() {
     super.initState();
-    nameController = TextEditingController(text: widget.userModel?.name);
-    emailController = TextEditingController(text: widget.userModel?.email);
-    teamController = TextEditingController(text: widget.userModel?.team);
-    experienceController =
-        TextEditingController(text: widget.userModel?.experience.toString());
-    contactController = TextEditingController(text: widget.userModel?.contact);
-    imageUrlProfile = widget.userModel?.imageUrlProfile;
+    if (widget.userModel != null) {
+      nameController = TextEditingController(text: widget.userModel?.name);
+      emailController = TextEditingController(text: widget.userModel?.email);
+      teamController = TextEditingController(text: widget.userModel?.team);
+      experienceController =
+          TextEditingController(text: widget.userModel?.experience.toString());
+      contactController =
+          TextEditingController(text: widget.userModel?.contact);
+      imageUrlProfile = widget.userModel?.imageUrlProfile;
+    }
+
     // passwordController = TextEditingController(text: widget.userModel.password);
   }
 

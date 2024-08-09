@@ -140,8 +140,12 @@ class _LoginScreenState extends State<LoginScreen> {
                         SizedBox(height: height * .02),
                         MediumText(title: 'Password:'),
                         TextFieldWidget(
-                          validator: RequiredValidator(
-                              errorText: 'Please enter your password'),
+                          validator: (value) {
+                            if (value!.isEmpty) {
+                              return 'Enter Your Password';
+                            }
+                            return null;
+                          },
                           obsecureText: isHidden,
                           keyboardType: TextInputType.visiblePassword,
                           hintText: 'Enter your Password',
@@ -208,75 +212,9 @@ class _LoginScreenState extends State<LoginScreen> {
                           width: width,
                           onPressed: () {
                             handleLogin();
-                            // Ensure emailController.text, passwordController.text, and role are not null
-                            // if (emailController.text.isNotEmpty &&
-                            //     passwordController.text.isNotEmpty) {
-                            //   authLogin.login(
-                            //     emailController.text,
-                            //     passwordController.text,
-                            //     context,
-                            //   );
-                            // } else {
-                            //   // Handle the case where role is null or other required fields are empty
-                            //   Fluttertoast.showToast(
-                            //     msg:
-                            //         "Please fill in all fields and select a role.",
-                            //     toastLength: Toast.LENGTH_SHORT,
-                            //     gravity: ToastGravity.TOP,
-                            //     timeInSecForIosWeb: 1,
-                            //     backgroundColor: Colors.red,
-                            //     textColor: Colors.white,
-                            //     fontSize: 16.0,
-                            //   );
-                            // }
                           },
                           title: "log In",
                         ),
-                        // SizedBox(height: height * .01),
-                        // Center(
-                        //   child: SmallText(
-                        //     title: "You can connect with",
-                        //     color: AppColors.grey500,
-                        //   ),
-                        // ),
-                        // SizedBox(height: height * .01),
-                        // GestureDetector(
-                        //   onTap: () {},
-                        //   child: Row(
-                        //     mainAxisAlignment: MainAxisAlignment.center,
-                        //     children: [
-                        //       SizedBox(width: width * .01),
-                        //       SmallContainer(
-                        //         child: Padding(
-                        //           padding: const EdgeInsets.only(left: 12.0),
-                        //           child: Center(
-                        //             child: Row(
-                        //               mainAxisSize: MainAxisSize.min,
-                        //               children: [
-                        //                 Image.asset(
-                        //                   'assets/images/google.png',
-                        //                   height: height * .04,
-                        //                 ),
-                        //                 SizedBox(
-                        //                   width: width * .03,
-                        //                 ),
-                        //                 const Text(
-                        //                   'Sign in with Google',
-                        //                   style: TextStyle(
-                        //                     color: Colors.white,
-                        //                     fontWeight: FontWeight.bold,
-                        //                     fontSize: 14,
-                        //                   ),
-                        //                 ),
-                        //               ],
-                        //             ),
-                        //           ),
-                        //         ),
-                        //       )
-                        //     ],
-                        //   ),
-                        // ),
-                        // SizedBox(height: height * .01),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [

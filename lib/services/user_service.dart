@@ -77,11 +77,11 @@ class UserService {
     }
 
     // If there are updates, apply them
-    if (updatedData.isNotEmpty) {
+    
       await FirebaseFirestore.instance
           .collection('users')
           .doc(user.uid)
           .update(updatedData);
-    }
+    
   }
 }

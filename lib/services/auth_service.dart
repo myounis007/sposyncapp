@@ -6,7 +6,6 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:soccer_app/Screens/Account/login_screen.dart';
-import 'package:soccer_app/Screens/Dashboard%20Screens/coach_dashboard_screen..dart';
 import 'package:soccer_app/Screens/Dashboard%20Screens/fan_dashboard_screen.dart';
 import 'package:soccer_app/Screens/Dashboard%20Screens/player_dashboard_screen.dart';
 import 'package:soccer_app/Screens/Widgets/bottomNavBar.dart';
@@ -63,66 +62,52 @@ class FirebaseService {
   }
 
   // Login method
-  Future<void> login(
-      String email, String password, BuildContext context) async {
-    try {
-      log("My User");
-      // Check if the email exists in Firestore
-      QuerySnapshot<Map<String, dynamic>> snapshot = await _firestore
+  Future<void> login(String email, String password, BuildContext context) async {
+  try {
+    // Log in using Firebase Authentication
+    UserCredential userCredential = await FirebaseAuth.instance
+        .signInWithEmailAndPassword(email: email, password: password);
+    
+    // If login is successful, get the user
+    User? user = userCredential.user;
+
+    if (user != null) {
+      // Retrieve the user's document from Firestore
+      DocumentSnapshot<Map<String, dynamic>> userDoc = await FirebaseFirestore.instance
           .collection('users')
-          .where('email', isEqualTo: email)
-          .where('password', isEqualTo: password)
-          .limit(1)
+          .doc(user.uid)
           .get();
 
-      if (snapshot.docs.isEmpty) {
-        Fluttertoast.showToast(
-          msg: "User does not exist",
-          toastLength: Toast.LENGTH_SHORT,
-          gravity: ToastGravity.TOP,
-          backgroundColor: Colors.red,
-          textColor: Colors.white,
-        );
-        log("Nt dghwef");
-        return;
-      }
+      if (userDoc.exists) {
+        final userData = userDoc.data()!;
+        log("My User ==> $userData");
+        
+        // Save user data to SharedPreferences (if needed)
+        await saveUserToPreferences(user.uid, email, userData['role']);
 
-      // Retrieve the user's document
-      DocumentSnapshot<Map<String, dynamic>> userDoc = snapshot.docs.first;
-      log("My User ==> $userDoc");
-      String storedPassword = userDoc['password'];
-
-      if (password == storedPassword) {
-        log("jsdbfdf");
-        String uid = userDoc.id;
-        final user = UserModel.fromJson(userDoc.data()!);
-        // Save user data to SharedPreferences
-        await saveUserToPreferences(uid, email, user.role!);
-
-        // ignore: use_build_context_synchronously
-        navigateToRoleBasedScreen(user.role, context);
+        // Navigate to role-based screen
+        navigateToRoleBasedScreen(userData['role'], context);
       } else {
-        log("message");
         Fluttertoast.showToast(
-          msg: "Incorrect password",
+          msg: "User data not found.",
           toastLength: Toast.LENGTH_SHORT,
           gravity: ToastGravity.TOP,
           backgroundColor: Colors.red,
           textColor: Colors.white,
         );
       }
-    } catch (e) {
-      log('Login error: $e');
-      Fluttertoast.showToast(
-        msg: "An error occurred during login. Please try again.",
-        toastLength: Toast.LENGTH_SHORT,
-        gravity: ToastGravity.TOP,
-        backgroundColor: Colors.red,
-        textColor: Colors.white,
-      );
     }
+  } catch (e) {
+    log('Login error: $e');
+    Fluttertoast.showToast(
+      msg: "Login failed. Please check your credentials.",
+      toastLength: Toast.LENGTH_SHORT,
+      gravity: ToastGravity.TOP,
+      backgroundColor: Colors.red,
+      textColor: Colors.white,
+    );
   }
-
+}
   // Save user data to SharedPreferences
   Future<void> saveUserToPreferences(
       String uid, String email, String role) async {

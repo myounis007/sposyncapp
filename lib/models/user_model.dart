@@ -12,8 +12,8 @@ class UserModel {
   String? team;
   String? imageUrlProfile;
   String? uid;
-  List<String>? followedLeagues;
-  List<String>? joinedLeagues;
+  List<Map<String, dynamic>>? followedLeagues;
+  List<Map<String, dynamic>>? joinedLeagues;
 
   UserModel({
     this.role,
@@ -64,8 +64,10 @@ class UserModel {
       team: json['team'],
       imageUrlProfile: json['imageUrlProfile'],
       uid: json['uid'],
-      followedLeagues: List<String>.from(json['followedLeagues'] ?? []),
-      joinedLeagues: List<String>.from(json['joinedLeagues'] ?? []),
+      followedLeagues:
+          List<Map<String, dynamic>>.from(json['followedLeagues'] ?? []),
+      joinedLeagues:
+          List<Map<String, dynamic>>.from(json['joinedLeagues'] ?? []),
     );
   }
 
@@ -103,8 +105,10 @@ class UserModel {
       team: data['team'],
       imageUrlProfile: data['imageUrlProfile'],
       uid: data['uid'],
-      followedLeagues: List<String>.from(data['followedLeagues'] ?? []),
-      joinedLeagues: List<String>.from(data['joinedLeagues'] ?? []),
+      followedLeagues:
+          List<Map<String, dynamic>>.from(data['followedLeagues'] ?? []),
+      joinedLeagues:
+          List<Map<String, dynamic>>.from(data['joinedLeagues'] ?? []),
     );
   }
 }

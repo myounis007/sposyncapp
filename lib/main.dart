@@ -53,7 +53,7 @@ class MyApp extends StatelessWidget {
         'BottomNavBarScreen': (context) => const BottomNavBarScreen(
             /*    role: ModalRoute.of(context)!.settings.arguments as String */),
         'PlayerDashboardScreen': (context) => const PlayerDashboardScreen(),
-        'FanDashboardScreen': (context) => FanDashboardScreen(),
+        'FanDashboardScreen': (context) => const FanDashboardScreen(),
       },
     );
   }

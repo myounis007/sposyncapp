@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:soccer_app/Screens/Widgets/text_widget.dart';
 import 'package:soccer_app/Screens/Widgets/app_colors.dart';
@@ -26,11 +28,12 @@ class _CoachScreenState extends State<CoachScreen> {
     fetchData();
   }
 
+  UserService userService = UserService();
   Future<void> fetchData() async {
-    UserService userService = UserService();
-    // final data = await userService.fetchUserData();
+    final data = await userService.fetchUserData();
+    log(">>>>$data");
     setState(() {
-      // userModel = data;
+      userModel = data!;
       isLoading = false;
     });
   }
@@ -123,62 +126,72 @@ class _CoachScreenState extends State<CoachScreen> {
         body: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: SingleChildScrollView(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                CircleAvatar(
-                  radius: 60,
-                  backgroundImage: userModel.imageUrlProfile != null
-                      ? NetworkImage(userModel.imageUrlProfile!)
-                          as ImageProvider
-                      : const AssetImage('assets/images/profileplaceholder.png')
-                          as ImageProvider,
-                ),
-                SizedBox(height: height * .06),
-                CustomTextTField(
-                  readOnly: true,
-                  hintText: userModel.name,
-                  prefixIcon: Icons.person_2,
-                ),
-                SizedBox(height: height * .01),
-                CustomTextTField(
-                  readOnly: true,
-                  hintText: userModel.email,
-                  prefixIcon: Icons.email_outlined,
-                ),
-                SizedBox(height: height * .01),
-                // CustomTextTField(
-                //   readOnly: true,
-                //   hintText: userModel!.password,
-                //   prefixIcon: Icons.lock_outline_rounded,
-                // ),
-                // SizedBox(height: height * .01),
-                CustomTextTField(
-                  readOnly: true,
-                  hintText: userModel.team,
-                  prefixIcon: Icons.group,
-                ),
-                SizedBox(height: height * .01),
-                CustomTextTField(
-                  readOnly: true,
-                  hintText: userModel.experience.toString(),
-                  prefixIcon: Icons.timeline,
-                ),
-                SizedBox(height: height * .01),
-                CustomTextTField(
-                  readOnly: true,
-                  hintText: userModel.contact,
-                  prefixIcon: Icons.phone,
-                ),
-                SizedBox(height: height * .03),
-                SmallButton(
-                  onPressed: navigateToEditCoachScreen,
-                  title: "Edit Profile",
-                ),
-                SizedBox(height: height * .01),
-              ],
-            ),
-          ),
+              child: FutureBuilder(
+            future: userService.fetchUserData(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(
+                  child: CircularProgressIndicator(),
+                );
+              }
+              final data = snapshot.data;
+              return Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircleAvatar(
+                    radius: 60,
+                    backgroundImage: userModel.imageUrlProfile != null
+                        ? NetworkImage(data!.imageUrlProfile!) as ImageProvider
+                        : const AssetImage(
+                                'assets/images/profileplaceholder.png')
+                            as ImageProvider,
+                  ),
+                  SizedBox(height: height * .06),
+                  CustomTextTField(
+                    readOnly: true,
+                    hintText: data!.name,
+                    prefixIcon: Icons.person_2,
+                  ),
+                  SizedBox(height: height * .01),
+                  CustomTextTField(
+                    readOnly: true,
+                    hintText: data.email,
+                    prefixIcon: Icons.email_outlined,
+                  ),
+                  SizedBox(height: height * .01),
+                  // CustomTextTField(
+                  //   readOnly: true,
+                  //   hintText: userModel!.password,
+                  //   prefixIcon: Icons.lock_outline_rounded,
+                  // ),
+                  // SizedBox(height: height * .01),
+                  CustomTextTField(
+                    readOnly: true,
+                    hintText: data.team,
+                    prefixIcon: Icons.group,
+                  ),
+                  SizedBox(height: height * .01),
+                  CustomTextTField(
+                    readOnly: true,
+                    hintText: data.experience.toString(),
+                    prefixIcon: Icons.timeline,
+                  ),
+                  SizedBox(height: height * .01),
+                  CustomTextTField(
+                    readOnly: true,
+                    hintText: data.contact,
+                    prefixIcon: Icons.phone,
+                  ),
+                  SizedBox(height: height * .03),
+                  SmallButton(
+                    onPressed: navigateToEditCoachScreen,
+                    title: "Edit Profile",
+                  ),
+                  SizedBox(height: height * .01),
+                ],
+              );
+            },
+          )),
         ),
       );
     }

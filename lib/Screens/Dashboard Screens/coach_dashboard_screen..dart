@@ -9,7 +9,6 @@ import 'package:image_picker/image_picker.dart';
 import 'package:soccer_app/Screens/Live%20Match/live_match.dart';
 import 'package:soccer_app/Screens/Pakistan%20Team/pakistan_team.dart';
 import 'package:soccer_app/Screens/Widgets/text_widget.dart';
-import 'package:soccer_app/edit_and_view_ofroles/Coach/coach_screen.dart';
 import 'package:soccer_app/services/auth_service.dart';
 import 'package:soccer_app/services/league_services.dart';
 import 'package:soccer_app/Screens/Dashboard%20Screens/league_gridview.dart';
