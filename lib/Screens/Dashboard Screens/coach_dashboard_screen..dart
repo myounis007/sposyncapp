@@ -25,8 +25,6 @@ class CoachDashboardScreen extends StatefulWidget {
 }
 
 class _CoachDashboardScreenState extends State<CoachDashboardScreen> {
- 
-
   LeagueServices allleagues = LeagueServices();
 
   // Controllers
@@ -48,6 +46,7 @@ class _CoachDashboardScreenState extends State<CoachDashboardScreen> {
   String? image2Url;
   bool isLive = false;
   bool showTeam = false;
+  String? imagePickedMessage;
   Future<void> _pickImage(BuildContext context, int imageNumber) async {
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(source: ImageSource.gallery);
@@ -55,11 +54,13 @@ class _CoachDashboardScreenState extends State<CoachDashboardScreen> {
     setState(() {
       if (imageNumber == 1) {
         _image1 = pickedFile != null ? File(pickedFile.path) : null;
+        imagePickedMessage = 'Image 1 has been picked';
       } else if (imageNumber == 2) {
         _image2 = pickedFile != null ? File(pickedFile.path) : null;
+        imagePickedMessage = 'Image 2 has been picked';
       }
     });
-    Navigator.pop(context);
+    Navigator.pop(context); // Close the image picker after selection
   }
 
   Future<String> _uploadImage(
@@ -70,24 +71,28 @@ class _CoachDashboardScreenState extends State<CoachDashboardScreen> {
     return await storageRef.getDownloadURL();
   }
 
-  Future<void> _createLeague() async {
+  Future<void> _createLeague(BuildContext context) async {
     if (_formKey.currentState!.validate()) {
       try {
         Createleague newLeague = Createleague(
-            league: leagueController.text,
-            venue: venueController.text,
-            player: playerController.text,
-            role: roleController.text,
-            duration: durationController.text,
-            time: timeController.text,
-            teams: teamController.text,
-            umpires: umpireController.text,
-            id: idController.text);
+          league: leagueController.text,
+          venue: venueController.text,
+          player: playerController.text,
+          role: roleController.text,
+          duration: durationController.text,
+          time: timeController.text,
+          teams: teamController.text,
+          umpires: umpireController.text,
+          id: '',
+        );
 
-        DocumentReference docRef =
-            await FirebaseFirestore.instance.collection('leagues').add(
-                  newLeague.toJson(),
-                );
+        DocumentReference docRef = await FirebaseFirestore.instance
+            .collection('leagues')
+            .add(newLeague.toJson());
+        String leagueId = docRef.id;
+
+        // Update the document with the generated ID
+        await docRef.update({'id': leagueId});
 
         if (_image1 != null) {
           image1Url = await _uploadImage(_image1!, docRef.id, 1);
@@ -113,10 +118,14 @@ class _CoachDashboardScreenState extends State<CoachDashboardScreen> {
         setState(() {
           _image1 = null;
           _image2 = null;
+          imagePickedMessage = null; // Reset the message
         });
-        Get.snackbar('title', 'League created successfully!');
+
+        // Close the dialog and show success message
+        Navigator.of(context).pop();
+        Get.snackbar('Success', 'League created successfully!');
       } catch (e) {
-        Get.snackbar('title', 'League created successfully! $e');
+        Get.snackbar('Error', 'Failed to create league: $e');
       }
     }
   }
@@ -165,12 +174,7 @@ class _CoachDashboardScreenState extends State<CoachDashboardScreen> {
       backgroundColor: AppColors.apptheme,
       appBar: AppBar(
         backgroundColor: Colors.white,
-        centerTitle: true,
-        title: InkWell(
-            onTap: () {
-              FirebaseService().signOut(context);
-            },
-            child: Text('Coach Dashboard')),
+        title: Text('Coach Dashboard'),
       ),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -341,7 +345,7 @@ class _CoachDashboardScreenState extends State<CoachDashboardScreen> {
                           actions: [
                             TextButton(
                               onPressed: () async {
-                                _createLeague();
+                                _createLeague(context);
                                 Get.off(context);
                               },
                               child: const Text(
@@ -440,9 +444,9 @@ class _CoachDashboardScreenState extends State<CoachDashboardScreen> {
                                       height: height * .03,
                                       width: width * .13,
                                       decoration: BoxDecoration(
-                                          color: AppColors.red,
-                                          borderRadius:
-                                              BorderRadius.circular(40)),
+                                        color: AppColors.red,
+                                        borderRadius: BorderRadius.circular(40),
+                                      ),
                                       child: Center(
                                         child: SmallText(
                                           title: 'Live',
@@ -655,7 +659,6 @@ class _CoachDashboardScreenState extends State<CoachDashboardScreen> {
           ),
         ),
       ),
-     
     );
   }
 

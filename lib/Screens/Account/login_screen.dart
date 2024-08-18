@@ -39,8 +39,8 @@ class _LoginScreenState extends State<LoginScreen> {
       try {
         // Call the login method with email, password, and context
         await authLogin.login(
-          emailController.text,
-          passwordController.text,
+          emailController.text.trim(),
+          passwordController.text.trim(),
           context,
         );
       } catch (e) {

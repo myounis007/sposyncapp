@@ -404,6 +404,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
                                 switch (dropdownValue) {
                                   case 'Team Coach':
+                                    log('Sending OTP to: ${coachEmail.text}');
                                     userModel = UserModel(
                                       role: dropdownValue,
                                       name: coachName.text,
@@ -449,6 +450,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
                                     break;
                                   case 'Player':
+                                    log('Sending OTP to: ${playerEmail.text}');
                                     userModel = UserModel(
                                         email: playerEmail.text,
                                         name: playerName.text,

@@ -24,7 +24,7 @@ class LeagueGridView extends StatelessWidget {
 
         var leagues = snapshot.data!.docs.map((doc) {
           return Createleague.fromJson(
-              doc.data() as Map<String, dynamic>,doc.id,);
+              doc.data() as Map<String, dynamic>);
         }).toList();
 
         return GridView.builder(

@@ -6,15 +6,18 @@ import 'package:soccer_app/Screens/Widgets/text_widget.dart';
 class LeagueDetailScreen extends StatelessWidget {
   final Createleague league;
   final bool isFollowed;
+  final bool? fromAllLeagues;
+  final bool? fromFollowedleagues;
   final VoidCallback onFollow;
   final VoidCallback onUnfollow;
 
   const LeagueDetailScreen({
     super.key,
     required this.league,
-    required this.isFollowed,
+    this.isFollowed = false,
     required this.onFollow,
     required this.onUnfollow,
+    this.fromAllLeagues, this.fromFollowedleagues,
   });
 
   @override
@@ -78,23 +81,25 @@ class LeagueDetailScreen extends StatelessWidget {
                       fit: BoxFit.cover,
                     )),
               const SizedBox(height: 16.0),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  ElevatedButton(
-                    onPressed: isFollowed ? onUnfollow : onFollow,
-                    child:
-                        Text(isFollowed ? 'Unfollow League' : 'Follow League'),
-                  ),
-                  const SizedBox(height: 16.0),
-                  ElevatedButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                    },
-                    child: const Text('Back'),
-                  ),
-                ],
-              ),
+             ( fromAllLeagues == true && isFollowed ==false) || (fromFollowedleagues == true && isFollowed== true)
+                  ? Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        ElevatedButton(
+                          onPressed: isFollowed ? onUnfollow : onFollow,
+                          child: Text(
+                              isFollowed ? 'Unfollow League' : 'Follow League'),
+                        ),
+                        const SizedBox(height: 16.0),
+                        ElevatedButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+                          },
+                          child: const Text('Back'),
+                        ),
+                      ],
+                    )
+                  : const SizedBox(),
             ],
           ),
         ),

@@ -62,52 +62,62 @@ class FirebaseService {
   }
 
   // Login method
-  Future<void> login(String email, String password, BuildContext context) async {
-  try {
-    // Log in using Firebase Authentication
-    UserCredential userCredential = await FirebaseAuth.instance
-        .signInWithEmailAndPassword(email: email, password: password);
-    
-    // If login is successful, get the user
-    User? user = userCredential.user;
+  Future<void> login(
+      String email, String password, BuildContext context) async {
+    try {
+      UserCredential userCredential = await FirebaseAuth.instance
+          .signInWithEmailAndPassword(
+              email: email, password: password);
 
-    if (user != null) {
-      // Retrieve the user's document from Firestore
-      DocumentSnapshot<Map<String, dynamic>> userDoc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .get();
+      log('UserCredential: $userCredential');
+      User? user = userCredential.user;
 
-      if (userDoc.exists) {
-        final userData = userDoc.data()!;
-        log("My User ==> $userData");
-        
-        // Save user data to SharedPreferences (if needed)
-        await saveUserToPreferences(user.uid, email, userData['role']);
+      if (user != null) {
+        log('User ID: ${user.uid}');
+        DocumentSnapshot<Map<String, dynamic>> userDoc = await FirebaseFirestore
+            .instance
+            .collection('users')
+            .doc(user.uid)
+            .get();
 
-        // Navigate to role-based screen
-        navigateToRoleBasedScreen(userData['role'], context);
-      } else {
-        Fluttertoast.showToast(
-          msg: "User data not found.",
-          toastLength: Toast.LENGTH_SHORT,
-          gravity: ToastGravity.TOP,
-          backgroundColor: Colors.red,
-          textColor: Colors.white,
-        );
+        log('UserDoc exists: ${userDoc.exists}');
+
+        if (userDoc.exists) {
+          final userData = userDoc.data()!;
+          log("My User ==> $userData");
+
+          // Ensure the role is correctly retrieved
+          String role = userData['role'];
+          log("User role: $role");
+
+          // Save user data to SharedPreferences (if needed)
+          await saveUserToPreferences(user.uid, email, role);
+
+          // Navigate to role-based screen
+          navigateToRoleBasedScreen(role, context);
+        } else {
+          Fluttertoast.showToast(
+            msg: "User data not found.",
+            toastLength: Toast.LENGTH_SHORT,
+            gravity: ToastGravity.TOP,
+            backgroundColor: Colors.red,
+            textColor: Colors.white,
+          );
+        }
       }
+    } catch (e) {
+      log('Login error: $e');
+
+      Fluttertoast.showToast(
+        msg: "Login failed. Please check your credentials.",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.TOP,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+      );
     }
-  } catch (e) {
-    log('Login error: $e');
-    Fluttertoast.showToast(
-      msg: "Login failed. Please check your credentials.",
-      toastLength: Toast.LENGTH_SHORT,
-      gravity: ToastGravity.TOP,
-      backgroundColor: Colors.red,
-      textColor: Colors.white,
-    );
   }
-}
+
   // Save user data to SharedPreferences
   Future<void> saveUserToPreferences(
       String uid, String email, String role) async {
@@ -173,7 +183,7 @@ class FirebaseService {
       await clearUserPreferences(); // Clear the saved preferences
       Get.snackbar('title', 'Succesfuly signedOut');
 
-      Get.offAll(const LoginScreen());
+      Get.offAll(() => const LoginScreen());
     } catch (e) {
       Get.snackbar('title', 'Error logging out. Please try again.');
     }

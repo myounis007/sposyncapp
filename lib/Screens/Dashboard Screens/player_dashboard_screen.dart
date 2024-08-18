@@ -36,7 +36,7 @@ class _PlayerDashboardScreenState extends State<PlayerDashboardScreen> {
     super.initState();
     userModel = widget.userModel;
     loadInitialData();
-    _loadJoinedLeagues();
+    fetchJoinedLeagues();
   }
 
   Future<void> loadInitialData() async {
@@ -46,56 +46,42 @@ class _PlayerDashboardScreenState extends State<PlayerDashboardScreen> {
     }
   }
 
-  Future<void> _loadJoinedLeagues() async {
-    if (userModel != null) {
-      DocumentSnapshot userDoc = await FirebaseFirestore.instance
+  Future<void> fetchJoinedLeagues() async {
+    try {
+      User? user = FirebaseAuth.instance.currentUser;
+
+      // Check if a user is logged in
+      if (user == null) {
+        log("No Firebase user is currently logged in.");
+        return;
+      }
+
+      String userId = user.uid;
+
+      // Get the user document from Firestore
+      DocumentSnapshot<Map<String, dynamic>> userDoc = await FirebaseFirestore
+          .instance
           .collection('users')
-          .doc(userModel!.uid)
+          .doc(userId)
           .get();
 
-      if (userDoc.exists) {
-        Map<String, dynamic>? userData =
-            userDoc.data() as Map<String, dynamic>?;
+      // Check if the document exists and contains the 'joinedLeagues' field
+      if (userDoc.exists && userDoc.data()!.containsKey('joinedLeagues')) {
+        List<dynamic> leaguesData = userDoc.data()!['joinedLeagues'];
 
-        if (userData != null) {
-          List<dynamic> leaguesData = userData['joinedLeagues'] ?? [];
-          joinedLeagues = leaguesData
-              .map((json) => Createleague.fromJson(json, json['id']))
-              .toList();
-          setState(() {});
-        } else {
-          log("User document data is null.");
-        }
-      } else {
-        log("User document does not exist.");
+        // Convert the list of maps to a list of Createleague objects
+        List<Createleague> leagues =
+            leaguesData.map((data) => Createleague.fromJson(data)).toList();
+
+        setState(() {
+          joinedLeagues = leagues;
+        });
+        log(" Hi Joined Leages ==> $joinedLeagues");
       }
+    } catch (e) {
+      log("Failed to fetch joined leagues: $e");
     }
   }
-
-  // Future<void> _updateJoinedLeaguesInFirestore() async {
-  //   if (userModel != null) {
-  //     DocumentReference userDocRef =
-  //         FirebaseFirestore.instance.collection('users').doc(userModel!.uid);
-
-  //     try {
-  //       // Update the followedLeagues field if the document exists
-  //       await userDocRef.update({
-  //         'joinedLeagues':
-  //             joinedLeagues.map((league) => league.toJson()).toList(),
-  //       });
-  //     } catch (e) {
-  //       // If the document does not exist, create it
-  //       if (e is FirebaseException && e.code == 'not-found') {
-  //         await userDocRef.set({
-  //           'joinedLeagues':
-  //               joinedLeagues.map((league) => league.toJson()).toList(),
-  //         });
-  //       } else {
-  //         rethrow;
-  //       }
-  //     }
-  //   }
-  // }
 
   void _addJoinedLeague(Createleague league) {
     setState(() {
@@ -118,17 +104,46 @@ class _PlayerDashboardScreenState extends State<PlayerDashboardScreen> {
         'joinedLeagues': FieldValue.arrayUnion(leaguesData),
       });
 
-      print("Joined leagues updated successfully");
+      log("Joined leagues updated successfully");
     } catch (e) {
-      print("Failed to update joined leagues: $e");
+      log("Failed to update joined leagues: $e");
     }
   }
 
   void _removeJoinedLeague(Createleague league) {
-    setState(() {
-      joinedLeagues.removeWhere((l) => l.id == league.id);
-    });
-    _updateJoinedLeaguesInFirestore();
+    for (var i = 0; i < joinedLeagues.length; i++) {
+      log("hi my list ==> ${league.id} and ${joinedLeagues[i].id}");
+      if (joinedLeagues[i].id == league.id) {
+        setState(() {
+          joinedLeagues.remove(league);
+        });
+      }
+    }
+
+    // setState(() {
+    //   joinedLeagues
+    //       .removeWhere((existingLeague) => existingLeague.id == league.id);
+    // });
+    _updateRemovedLeagueInFirestore(league);
+  }
+
+  Future<void> _updateRemovedLeagueInFirestore(Createleague league) async {
+    try {
+      // Assuming `userId` is the current user's ID
+      String userId = FirebaseAuth.instance.currentUser!.uid;
+
+      // Convert the `league` to a map
+      Map<String, dynamic> leagueData = league.toJson();
+
+      // Remove the league from the `joinedLeagues` field in Firestore
+
+      await FirebaseFirestore.instance.collection('users').doc(userId).update({
+        'joinedLeagues': FieldValue.arrayRemove([leagueData]),
+      });
+      log("League removed successfully from joined leagues");
+    } catch (e) {
+      log("Failed to remove league: $e");
+    }
   }
 
   @override
@@ -264,6 +279,7 @@ class _PlayerDashboardScreenState extends State<PlayerDashboardScreen> {
                                           fontSize: 16.0);
                                       Navigator.pop(context);
                                     },
+                                    fromAllLeagues: true,
                                     onUnfollow: () {
                                       _removeJoinedLeague(league);
                                       Fluttertoast.showToast(
@@ -319,7 +335,7 @@ class _PlayerDashboardScreenState extends State<PlayerDashboardScreen> {
                             physics: const BouncingScrollPhysics(),
                             itemCount: joinedLeagues.length,
                             itemBuilder: (context, index) {
-                              final league = joinedLeagues[index];
+                              Createleague league = joinedLeagues[index];
                               return Card(
                                 child: ListTile(
                                   leading: league.image1 != null &&
@@ -352,6 +368,7 @@ class _PlayerDashboardScreenState extends State<PlayerDashboardScreen> {
                                             LeagueDetailScreen(
                                           league: league,
                                           isFollowed: true,
+                                          fromFollowedleagues: true,
                                           onUnfollow: () {
                                             _removeJoinedLeague(league);
                                             Fluttertoast.showToast(

@@ -55,18 +55,19 @@ class _CoachScreenState extends State<CoachScreen> {
   Widget build(BuildContext context) {
     double height = MediaQuery.of(context).size.height;
 
-    if (isLoading) {
-      return const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(),
-        ),
-      );
-    }
+    // if (isLoading) {
+    //   return const Scaffold(
+    //     body: Center(
+    //       child: CircularProgressIndicator(),
+    //     ),
+    //   );
+    // }
 
-    if (isLoading == false && userModel == null) {
+    // ignore: unnecessary_null_comparison
+    if (isLoading == false && userModel ==null) {
       return const Scaffold(
         body: Center(
-          child: Text("No data found"),
+          child: Text("No data founds"),
         ),
       );
     } else {

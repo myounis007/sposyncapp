@@ -91,7 +91,7 @@ class LeagueService {
     return _leaguesCollection.snapshots().map((snapshot) {
       return snapshot.docs.map((doc) {
         return Createleague.fromJson(
-            doc.data() as Map<String, dynamic>, doc.id);
+            doc.data() as Map<String, dynamic>);
       }).toList();
     });
   }

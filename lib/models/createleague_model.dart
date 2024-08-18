@@ -43,9 +43,9 @@ class Createleague {
   }
 
   // Create Createleague instance from JSON map
-  factory Createleague.fromJson(Map<String, dynamic> json, String id) {
+  factory Createleague.fromJson(Map<String, dynamic> json) {
     return Createleague(
-      id: id,
+      id: json['id'] as String,
       league: json['league'] as String?,
       venue: json['venue'] as String?,
       player: json['player'] as String?,

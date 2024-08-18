@@ -1,20 +1,28 @@
+// ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'dart:developer';
+
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'package:soccer_app/Screens/Dashboard%20Screens/league_detail.dart';
-import 'package:soccer_app/Screens/Widgets/text_widget.dart';
-import 'package:soccer_app/services/auth_service.dart';
-import 'package:soccer_app/edit_and_view_ofroles/Fan/fan_screen.dart';
 import 'package:soccer_app/Screens/Widgets/app_colors.dart';
 import 'package:soccer_app/Screens/Widgets/round_button.dart';
+import 'package:soccer_app/Screens/Widgets/text_widget.dart';
+import 'package:soccer_app/edit_and_view_ofroles/Fan/fan_screen.dart';
+import 'package:soccer_app/services/auth_service.dart';
+
 import '../../models/createleague_model.dart';
 import '../../models/user_model.dart';
 import '../../services/league_services.dart';
 
 class FanDashboardScreen extends StatefulWidget {
-  const FanDashboardScreen({super.key});
+  final UserModel? userModel;
+  const FanDashboardScreen({
+    super.key,
+    this.userModel,
+  });
 
   @override
   State<FanDashboardScreen> createState() => _FanDashboardScreenState();
@@ -29,106 +37,106 @@ class _FanDashboardScreenState extends State<FanDashboardScreen> {
   @override
   void initState() {
     super.initState();
-
-    _loadUserData();
-    _loadFollowedLeagues();
+    userModel = widget.userModel;
+    loadInitialData();
+    fetchfolloedLeagues();
   }
 
-  Future<void> _loadUserData() async {
+  Future<void> loadInitialData() async {
     userModel = await firebaseService.getUser();
     if (userModel != null) {
-      // Load followed leagues when user data is available
-      _loadFollowedLeagues();
+      setState(() {});
     }
   }
 
-  Future<void> _loadFollowedLeagues() async {
-    if (userModel != null) {
-      DocumentSnapshot userDoc = await FirebaseFirestore.instance
+  Future fetchfolloedLeagues() async {
+    try {
+      User? user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        log("No Firebase user is currently logged in.");
+        return;
+      }
+
+      String userId = user.uid;
+
+      DocumentSnapshot<Map<String, dynamic>> userDoc = await FirebaseFirestore
+          .instance
           .collection('users')
-          .doc(userModel!.uid)
+          .doc(userId)
           .get();
 
-      if (userDoc.exists) {
-        // Safely cast the data to Map<String, dynamic>
-        Map<String, dynamic>? userData =
-            userDoc.data() as Map<String, dynamic>?;
+      // Check if the document exists and contains the 'followedLeagues' field
+      if (userDoc.exists && userDoc.data()!.containsKey('followedLeagues')) {
+        List<dynamic> leaguesData = userDoc.data()!['followedLeagues'];
 
-        if (userData != null) {
-          List<dynamic> leaguesData = userData['followedLeagues'] ?? [];
-          followedLeagues = leaguesData
-              .map((json) => Createleague.fromJson(json, json['id']))
-              .toList();
-          setState(() {});
-        } else {
-          log("User document data is null.");
-        }
-      } else {
-        log("User document does not exist.");
-      }
-    }
-  }
+        // Convert the list of maps to a list of Createleague objects
+        List<Createleague> leagues =
+            leaguesData.map((data) => Createleague.fromJson(data)).toList();
 
-  Future<void> _updateFollowedLeaguesInFirestore() async {
-    if (userModel != null) {
-      DocumentReference userDocRef =
-          FirebaseFirestore.instance.collection('users').doc(userModel!.uid);
-
-      // Check if the document exists
-      DocumentSnapshot userDoc = await userDocRef.get();
-
-      if (userDoc.exists) {
-        // Update the followedLeagues field in the existing document
-        await userDocRef.update({
-          'followedLeagues':
-              followedLeagues.map((league) => league.toJson()).toList(),
-        });
-      } else {
-        log("User document does not exist, creating new document.");
-        // Create a new document with followedLeagues if none exists
-        await userDocRef.set({
-          'followedLeagues':
-              followedLeagues.map((league) => league.toJson()).toList(),
+        setState(() {
+          followedLeagues = leagues;
         });
       }
+    } catch (e) {
+      log("Failed to fetch followed leagues: $e");
     }
+    return [];
   }
 
-  void _addFollowedLeague(Createleague league) async {
+  void _addFollowedLeagues(Createleague league) {
     setState(() {
       followedLeagues.add(league);
     });
+    _updatefollowedLeaguesInFirestore();
+  }
 
-    if (userModel != null) {
-      DocumentReference userDocRef =
-          FirebaseFirestore.instance.collection('users').doc(userModel!.uid);
+  Future<void> _updatefollowedLeaguesInFirestore() async {
+    try {
+      String userId = FirebaseAuth.instance.currentUser!.uid;
 
-      await userDocRef.update({
-        'followedLeagues': FieldValue.arrayUnion([league.toJson()]),
-      }).catchError((error) async {
-        // If the document doesn't exist, create it and add the league
-        await userDocRef.set({
-          'followedLeagues': [league.toJson()],
-        });
-      });
+      // Convert the `followedLeagues` to a list of maps
+      List<Map<String, dynamic>> leaguesData =
+          followedLeagues.map((league) => league.toJson()).toList();
+      log("MyData ==> $leaguesData");
+      // Update the entire `followedLeagues` field in Firestore
+      await FirebaseFirestore.instance.collection('users').doc(userId).update(
+        {
+          'followedLeagues': leaguesData,
+        },
+      );
+
+      log("Followed leagues updated successfully");
+    } catch (e) {
+      log("Failed to update followed leagues: $e");
     }
   }
 
-  void _removeFollowedLeague(Createleague league) async {
-    setState(() {
-      followedLeagues.removeWhere((l) => l.id == league.id);
-    });
+  void _removeFollowedLeague(Createleague league) {
+    for (var i = 0; i < followedLeagues.length; i++) {
+      log("MyLeaguesRemoved ==> ${followedLeagues[i].id} and ${league.id}");
+      if (followedLeagues[i].id == league.id) {
+        followedLeagues.remove(league);
+        updateRemovedLeagueInFirestore(league);
+      }
+    }
+    setState(() {});
+  }
 
-    if (userModel != null) {
-      DocumentReference userDocRef =
-          FirebaseFirestore.instance.collection('users').doc(userModel!.uid);
+  Future updateRemovedLeagueInFirestore(Createleague league) async {
+    try {
+      // Assuming `userId` is the current user's ID
+      String userId = FirebaseAuth.instance.currentUser!.uid;
 
-      await userDocRef.update({
-        'followedLeagues': FieldValue.arrayRemove([league.toJson()]),
-      }).catchError((error) {
-        // Handle error (e.g., log it or show a message)
-        log('$error');
+      // Convert the `league` to a map
+      Map<String, dynamic> leagueData = league.toJson();
+      // Remove the league from the `followedLeagues` field in Firestore
+      FirebaseFirestore.instance.collection('users').doc(userId).update({
+        'followedLeagues': FieldValue.arrayRemove([leagueData]),
       });
+      setState(() {});
+      log("League removed successfully from followed leagues");
+    } catch (e) {
+      log("Failed to remove league: $e");
     }
   }
 
@@ -137,7 +145,11 @@ class _FanDashboardScreenState extends State<FanDashboardScreen> {
   @override
   Widget build(BuildContext context) {
     double height = MediaQuery.sizeOf(context).height;
-
+    if (userModel == null) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
     return Scaffold(
       backgroundColor: AppColors.apptheme,
       drawer: Drawer(
@@ -151,14 +163,18 @@ class _FanDashboardScreenState extends State<FanDashboardScreen> {
                 height: 150,
                 width: double.infinity,
                 decoration: const BoxDecoration(color: Colors.deepOrange),
-                child: Center(child: Text('${userModel?.name}')),
+                child: Center(
+                  child: Text('${userModel?.favouriteTeam}'),
+                ),
               ),
               ListTile(
                 onTap: () {
                   Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => const FanScreen()));
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const FanScreen(),
+                    ),
+                  );
                 },
                 leading: const Icon(Icons.dashboard_sharp),
                 title: MediumText(title: 'Profile'),
@@ -249,7 +265,7 @@ class _FanDashboardScreenState extends State<FanDashboardScreen> {
                                   league: league,
                                   isFollowed: isFollowed,
                                   onFollow: () {
-                                    _addFollowedLeague(league);
+                                    _addFollowedLeagues(league);
                                     Fluttertoast.showToast(
                                         msg: "You followed ${league.league}",
                                         toastLength: Toast.LENGTH_SHORT,
@@ -271,6 +287,7 @@ class _FanDashboardScreenState extends State<FanDashboardScreen> {
                                         fontSize: 16.0);
                                     Navigator.pop(context);
                                   },
+                                  fromAllLeagues: true,
                                 ),
                               ),
                             );
@@ -312,6 +329,7 @@ class _FanDashboardScreenState extends State<FanDashboardScreen> {
                             itemCount: followedLeagues.length,
                             itemBuilder: (context, index) {
                               final league = followedLeagues[index];
+                              log("MyFollowed Leagues ${league.id}");
                               return Card(
                                 child: ListTile(
                                   leading: league.image1 != null &&
@@ -345,6 +363,7 @@ class _FanDashboardScreenState extends State<FanDashboardScreen> {
                                             LeagueDetailScreen(
                                           league: league,
                                           isFollowed: true,
+                                          fromFollowedleagues: true,
                                           onUnfollow: () {
                                             _removeFollowedLeague(league);
                                             Fluttertoast.showToast(
